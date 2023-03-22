@@ -1,0 +1,52 @@
+networks:
+  app-tier:
+    driver: bridge
+
+services:
+  # Exec into this container twice, run rippled and rippled-reporting in each.
+  ubuntu_bashbox:
+    build:
+      context: .
+      dockerfile: ./rippled.Dockerfile
+      target: ubuntu-rippled-both
+    volumes:
+      - ./db_data/reporting_node_A:/var/lib/rippled-reporting/db
+      - ./db_data/node_A:/var/lib/rippled/db
+    ports:
+      - "5006:5006"
+      - "51236:51236"
+      - "6007:6007"
+      - "6016:6016"
+      - "5005:5005"
+      - "51235:51235"
+      - "6006:6006"
+      - "50051:50051"
+      - "6015:6015"
+    stdin_open: true 
+    tty: true
+    networks:
+      - app-tier
+  postgresql:
+    image: 'bitnami/postgresql:latest'
+    environment:
+      - POSTGRESQL_PASSWORD=rippled
+      - POSTGRESQL_USERNAME=rippled
+      - POSTGRESQL_DATABASE=rippled
+    volumes:
+      - ./db_data/postgres:/bitnami
+    ports:
+      - "5432:5432"
+    networks:
+      - app-tier
+  cassandra:
+    environment:
+      - CASSANDRA_TRANSPORT_PORT_NUMBER=7000
+      - CASSANDRA_CQL_PORT_NUMBER=9042
+    image: bitnami/cassandra:latest
+    volumes:
+      - ./db_data/cassandra:/bitnami
+    networks:
+      - app-tier
+    ports:
+      - '7000:7000'
+      - '9042:9042'
